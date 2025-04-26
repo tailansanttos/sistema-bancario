@@ -21,16 +21,31 @@ public class Cliente {
     private String telefone;
     private String endereco;
 
+    @OneToOne(mappedBy = "cliente")
+    private Conta conta;
+
+
     public Cliente() {
     }
 
-    public Cliente(String nome, String cpf, String email, String telefone, String endereco) {
+    public Conta getConta() {
+        return conta;
+    }
+
+    public void setConta(Conta conta) {
+        this.conta = conta;
+    }
+
+    public Cliente(String nome, String cpf, String email, String telefone, String endereco, Conta conta) {
         this.nome = nome;
         this.cpf = cpf;
         this.email = email;
         this.telefone = telefone;
         this.endereco = endereco;
+        this.conta = conta;
     }
+
+
 
     public UUID getId() {
         return id;
