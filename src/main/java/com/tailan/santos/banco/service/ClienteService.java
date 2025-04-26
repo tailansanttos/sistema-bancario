@@ -22,15 +22,14 @@ public class ClienteService {
         newCliente.setCpf(cliente.cpf());
         newCliente.setEndereco(cliente.endereco());
         newCliente.setTelefone(cliente.telefone());
-        newCliente.setConta(null);
+
 
         Cliente clienteSalvo = clienteRepository.save(newCliente);
         ClienteResponseDto response = new ClienteResponseDto(
                 clienteSalvo.getNome(),
                 clienteSalvo.getEmail(),
                 clienteSalvo.getTelefone(),
-                clienteSalvo.getEndereco(),
-                clienteSalvo.getConta().getId()
+                clienteSalvo.getEndereco()
         );
         return response;
     }
@@ -40,7 +39,7 @@ public class ClienteService {
     public List<ClienteResponseDto> listaClientes() {
         List<Cliente> clientes = clienteRepository.findAll();
         return clientes.stream().map(cliente -> new ClienteResponseDto(
-                cliente.getNome(),cliente.getEmail(),cliente.getTelefone(),cliente.getEndereco(),cliente.getConta().getId()
+                cliente.getNome(),cliente.getEmail(),cliente.getTelefone(),cliente.getEndereco()
         )).toList();
     }
 }
