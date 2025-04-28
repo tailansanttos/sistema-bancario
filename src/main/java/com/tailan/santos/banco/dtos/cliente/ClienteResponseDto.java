@@ -1,6 +1,4 @@
-package com.tailan.santos.banco.dtos;
-
-import java.util.UUID;
+package com.tailan.santos.banco.dtos.cliente;
 
 public record ClienteResponseDto(String nome, String email, String telefone, String endereco) {
 }

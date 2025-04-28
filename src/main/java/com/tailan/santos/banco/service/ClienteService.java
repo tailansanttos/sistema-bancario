@@ -1,12 +1,13 @@
 package com.tailan.santos.banco.service;
 
-import com.tailan.santos.banco.dtos.ClienteRequestDto;
-import com.tailan.santos.banco.dtos.ClienteResponseDto;
+import com.tailan.santos.banco.dtos.cliente.ClienteRequestDto;
+import com.tailan.santos.banco.dtos.cliente.ClienteResponseDto;
 import com.tailan.santos.banco.model.Cliente;
 import com.tailan.santos.banco.repositories.ClienteRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class ClienteService {
@@ -41,5 +42,11 @@ public class ClienteService {
         return clientes.stream().map(cliente -> new ClienteResponseDto(
                 cliente.getNome(),cliente.getEmail(),cliente.getTelefone(),cliente.getEndereco()
         )).toList();
+    }
+
+    public Cliente getCliente(UUID clienteId) {
+        Cliente cliente = clienteRepository.findById(clienteId).orElseThrow(() -> new RuntimeException("Cliente não encontrado"));
+
+        return cliente;
     }
 }
