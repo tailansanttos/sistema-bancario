@@ -36,6 +36,7 @@ public class ContaService {
 
         ContaResponseDto response = new ContaResponseDto(
                 contaSalva.getId(),
+                contaSalva.getSaldo(),
                 conta.getCliente().getNome(),
                 conta.getCliente().getEmail(),
                 conta.getCliente().getTelefone(),
@@ -48,6 +49,7 @@ public class ContaService {
         List<Conta> contas = contaRepository.findAll();
       return contas.stream().map(conta -> new ContaResponseDto(
                 conta.getId(),
+                conta.getSaldo(),
                 conta.getCliente().getNome(),
                 conta.getCliente().getEmail(),
                 conta.getCliente().getTelefone(),

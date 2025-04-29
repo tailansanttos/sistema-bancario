@@ -3,6 +3,8 @@ package com.tailan.santos.banco.service;
 import com.tailan.santos.banco.dtos.transacao.DepositoESaqueTransacaoDto;
 import com.tailan.santos.banco.dtos.transacao.TransacaoResponseDto;
 import com.tailan.santos.banco.dtos.transacao.TransferenciaDto;
+import com.tailan.santos.banco.exception.ContaNotFoundException;
+import com.tailan.santos.banco.exception.SaldoInsuficienteException;
 import com.tailan.santos.banco.model.Conta;
 import com.tailan.santos.banco.model.Transacao;
 import com.tailan.santos.banco.model.TransacaoStatus;
@@ -12,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -27,11 +30,11 @@ public class TransacaoService {
     public TransacaoResponseDto depositoConta(UUID contaId, DepositoESaqueTransacaoDto depositoDto) {
         Conta buscarConta = contaService.pegarContaPorId(contaId);
         if (buscarConta == null) {
-            throw new RuntimeException("Conta não encontrada");
+            throw new ContaNotFoundException("Conta não encontrada");
         }
 
         if (depositoDto.valor().compareTo(BigDecimal.ZERO) <0) {
-            throw new RuntimeException("Valor do deposito precisa ser maior que zero");
+            throw new SaldoInsuficienteException("Valor do deposito precisa ser maior que zero");
         }
 
         contaService.adicionarSaldo(buscarConta, depositoDto.valor());
@@ -62,11 +65,11 @@ public class TransacaoService {
     public TransacaoResponseDto saqueConta(UUID contaId, DepositoESaqueTransacaoDto saqueDto) {
         Conta buscarConta = contaService.pegarContaPorId(contaId);
         if (buscarConta == null) {
-            throw new RuntimeException("Conta não encontrada");
+            throw new ContaNotFoundException("Conta não encontrada");
         }
 
         if (buscarConta.getSaldo().compareTo(saqueDto.valor()) < 0) {
-            throw new RuntimeException("Saldo da conta insuficiente");
+            throw new SaldoInsuficienteException("Saldo da conta insuficiente");
         }
 
         contaService.removeSaldo(buscarConta, saqueDto.valor());
@@ -101,17 +104,17 @@ public class TransacaoService {
 
         //VERIFICA SE AS CONTAS NAO SAO AS MESMAS
         if (contaRecebe.getId() == contaTransfere.getId()) {
-            throw new RuntimeException("Não pode transferencia entre as mesmas contas.");
+            throw new ContaNotFoundException("Não pode transferencia entre as mesmas contas.");
         }
 
         //VERIFICA SE A CONTA QUE TRANSFERE TEM SALDO
         if (contaTransfere.getSaldo().compareTo(valorTransferencia)<0){
-            throw new RuntimeException("Saldo da conta insuficiente");
+            throw new SaldoInsuficienteException("Saldo da conta insuficiente");
         }
 
         //VERIFICA SE O VALOR DA TRANSFERENCIA É MAIOR QUE 0
         if (valorTransferencia.compareTo(BigDecimal.ZERO) <0){
-            throw new RuntimeException("Valor do deposito precisa ser maior que zero");
+            throw new SaldoInsuficienteException("Valor do deposito precisa ser maior que zero");
         }
 
         contaService.removeSaldo(contaTransfere, valorTransferencia);
@@ -138,6 +141,17 @@ public class TransacaoService {
     }
 
 
+    public List<TransacaoResponseDto> extratoConta(UUID contaId) {
+        List<Transacao> buscarTranscao = transacaoRepository.findByContaOrigemIdOrContaDestinoIdOrderByDataHoraDesc(contaId, contaId);
+        return buscarTranscao.stream().map(transacao -> new TransacaoResponseDto(
+                transacao.getValor(),
+                transacao.getDataHora(),
+                transacao.getTipo(),
+                transacao.getContaOrigem() != null ? transacao.getContaOrigem().getId():null,
+                transacao.getContaDestino()!= null ? transacao.getContaDestino().getId():null,
+                transacao.getStatus()
+        )).toList();
+    }
 
 
 }

@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("contas")
+@RequestMapping("/contas")
 public class ContaController {
     private final ContaService contaService;
     public ContaController(ContaService contaService) {

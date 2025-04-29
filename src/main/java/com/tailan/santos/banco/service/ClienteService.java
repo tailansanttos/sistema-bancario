@@ -27,6 +27,7 @@ public class ClienteService {
 
         Cliente clienteSalvo = clienteRepository.save(newCliente);
         ClienteResponseDto response = new ClienteResponseDto(
+                clienteSalvo.getId(),
                 clienteSalvo.getNome(),
                 clienteSalvo.getEmail(),
                 clienteSalvo.getTelefone(),
@@ -39,7 +40,7 @@ public class ClienteService {
 
     public List<ClienteResponseDto> listaClientes() {
         List<Cliente> clientes = clienteRepository.findAll();
-        return clientes.stream().map(cliente -> new ClienteResponseDto(
+        return clientes.stream().map(cliente -> new ClienteResponseDto(cliente.getId(),
                 cliente.getNome(),cliente.getEmail(),cliente.getTelefone(),cliente.getEndereco()
         )).toList();
     }
