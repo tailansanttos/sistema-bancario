@@ -10,6 +10,11 @@ import com.tailan.santos.banco.model.Transacao;
 import com.tailan.santos.banco.model.TransacaoStatus;
 import com.tailan.santos.banco.model.TransacaoTipo;
 import com.tailan.santos.banco.repositories.TransacaoRepository;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -21,10 +26,13 @@ import java.util.UUID;
 public class TransacaoService {
     private final TransacaoRepository transacaoRepository;
     private final ContaService contaService;
+    private final KafkaTemplate<String, TransacaoResponseDto> kafkaTemplate;
+    private static final Logger logger = LoggerFactory.getLogger(TransacaoService.class);
 
-    public TransacaoService(TransacaoRepository transacaoRepository, ContaService contaService) {
+    public TransacaoService(TransacaoRepository transacaoRepository, ContaService contaService, KafkaTemplate<String, TransacaoResponseDto> kafkaTemplate) {
         this.transacaoRepository = transacaoRepository;
         this.contaService = contaService;
+        this.kafkaTemplate = kafkaTemplate;
     }
 
     public TransacaoResponseDto depositoConta(UUID contaId, DepositoESaqueTransacaoDto depositoDto) {
@@ -50,6 +58,7 @@ public class TransacaoService {
         transacaoRepository.save(transacao);
 
         TransacaoResponseDto transacaoResponseDto = new TransacaoResponseDto(
+                transacao.getId(),
                 transacao.getValor(),
                 transacao.getDataHora(),
                 transacao.getTipo(),
@@ -84,6 +93,7 @@ public class TransacaoService {
         transacaoRepository.save(transacao);
 
         TransacaoResponseDto transacaoResponseDto = new TransacaoResponseDto(
+                transacao.getId(),
                 transacao.getValor(),
                 transacao.getDataHora(),
                 transacao.getTipo(),
@@ -96,6 +106,22 @@ public class TransacaoService {
     }
 
 
+
+
+
+    public List<TransacaoResponseDto> extratoConta(UUID contaId) {
+        List<Transacao> buscarTranscao = transacaoRepository.findByContaOrigemIdOrContaDestinoIdOrderByDataHoraDesc(contaId, contaId);
+        return buscarTranscao.stream().map(transacao -> new TransacaoResponseDto(
+                transacao.getId(),
+                transacao.getValor(),
+                transacao.getDataHora(),
+                transacao.getTipo(),
+                transacao.getContaOrigem() != null ? transacao.getContaOrigem().getId():null,
+                transacao.getContaDestino()!= null ? transacao.getContaDestino().getId():null,
+                transacao.getStatus()
+        )).toList();
+    }
+
     public TransacaoResponseDto transferenciaContas(TransferenciaDto transferenciaDto){
         BigDecimal valorTransferencia = transferenciaDto.valor();
 
@@ -107,51 +133,99 @@ public class TransacaoService {
             throw new ContaNotFoundException("Não pode transferencia entre as mesmas contas.");
         }
 
-        //VERIFICA SE A CONTA QUE TRANSFERE TEM SALDO
-        if (contaTransfere.getSaldo().compareTo(valorTransferencia)<0){
-            throw new SaldoInsuficienteException("Saldo da conta insuficiente");
-        }
-
         //VERIFICA SE O VALOR DA TRANSFERENCIA É MAIOR QUE 0
         if (valorTransferencia.compareTo(BigDecimal.ZERO) <0){
             throw new SaldoInsuficienteException("Valor do deposito precisa ser maior que zero");
         }
 
-        contaService.removeSaldo(contaTransfere, valorTransferencia);
-        contaService.adicionarSaldo(contaRecebe, valorTransferencia);
+        //CRIA UMA NOVA TRANSACAO
         Transacao transacao = new Transacao();
-        transacao.setContaOrigem(contaRecebe);
+        transacao.setContaOrigem(contaTransfere);
         transacao.setValor(transferenciaDto.valor());
-        transacao.setStatus(TransacaoStatus.CONCLUIDO);
+        transacao.setStatus(TransacaoStatus.PENDENTE);
         transacao.setTipo(TransacaoTipo.TRANSFERENCIA);
         transacao.setDataHora(LocalDateTime.now());
         transacao.setContaDestino(contaRecebe);
+
+        //SALVA NO BANCO
         transacaoRepository.save(transacao);
 
+
+
         TransacaoResponseDto transacaoResponseDto = new TransacaoResponseDto(
+                transacao.getId(),
                 transacao.getValor(),
                 transacao.getDataHora(),
                 transacao.getTipo(),
                 transacao.getContaOrigem().getId(),
                 transacao.getContaDestino().getId(),
-                transacao.getStatus()
-        );
+                transacao.getStatus());
+
+        transacaoRepository.save(transacao);
+
+        // Envia para Kafka (a transferência ainda não foi processada)
+        kafkaTemplate.send("transferencias", transacaoResponseDto);
+        logger.info("Transferencia em processamento.");
+        //O STATUS VAI CHEGAR PENDENTE DO KAFKA, MAS O STATUS REAL É ATUALIZADO NO KAFKA, CONCLUIDO OU NÃO.
+
         return transacaoResponseDto;
+    }
+
+
+
+    @KafkaListener(topics = "transferencias", groupId = "transferencias-realizadas")
+
+    public void consumirMensagens(TransacaoResponseDto transacaoResponseDto) {
+
+        //AQUI VAI PEGAR A TRANSACAO PELO ID, E VAI VERIFICAR O SALDO, SE É VALIDO.
+        //SE FOR VALIDO, VAI ATUALIZAR OS SALDOS NAS CONTAS ENVOLVIDA NA TRANFERENCIA, VAI ATUALIZAR O STATUS DA TRANSACAO PARA CONCLUIDO SE DER TUDO CERTO, E VAI MANDAR A MENSAGEM
+       UUID transferenciaId = transacaoResponseDto.transacaoId();
+
+        try{
+            //PEGA A TRANSFERENCIA PELO ID, E  VAI ATUALIZAR O SALDO DAS CONTAS ENTRE A TRANSFERENCIA
+            Transacao transacao = transacaoRepository.findById(transferenciaId).orElseThrow(() -> new ContaNotFoundException("Transação não encontrada."));
+            BigDecimal valorTransferencia = transacao.getValor();
+
+            //VERIFICA SE A TRANSACAO JA FOI PROCESSADA, PRA EVITAR DUPLICIDADE
+            if (transacao.getStatus().equals(TransacaoStatus.CONCLUIDO) || transacao.getStatus().equals(TransacaoStatus.CANCELADO)){
+                logger.info("Transação já foi processada.");
+                return;
+            }
+
+            //VERIFICA SE A CONTA QUE TRANSFERE TEM SALDO
+            if (transacao.getContaOrigem().getSaldo().compareTo(valorTransferencia)<0){
+                //SE N TIVER, A TRANSFERENCIA SERÁ CANCELADA
+                atualizarStatus(transacao.getId(), TransacaoStatus.CANCELADO);
+                throw new SaldoInsuficienteException("Saldo insuficiente");
+            }
+
+            //ADICIONA E REMOVE O SALDO DAS COTNAS
+            contaService.adicionarSaldo(transacao.getContaDestino(), valorTransferencia);
+            contaService.removeSaldo(transacao.getContaOrigem(), valorTransferencia);
+
+            atualizarStatus(transacao.getId(), TransacaoStatus.CONCLUIDO);
+
+            logger.info("Trasferencia realizada com sucesso: valor={}, origem{}, destino={}, status={}",
+                    transacao.getValor(),transacao.getContaOrigem(),transacao.getContaDestino(),transacao.getStatus());
+
+        }catch (Exception e){
+            atualizarStatus(transacaoResponseDto.transacaoId(), TransacaoStatus.CANCELADO);
+            logger.info("Erro ao processar transferencia");
+        }
 
     }
 
 
-    public List<TransacaoResponseDto> extratoConta(UUID contaId) {
-        List<Transacao> buscarTranscao = transacaoRepository.findByContaOrigemIdOrContaDestinoIdOrderByDataHoraDesc(contaId, contaId);
-        return buscarTranscao.stream().map(transacao -> new TransacaoResponseDto(
-                transacao.getValor(),
-                transacao.getDataHora(),
-                transacao.getTipo(),
-                transacao.getContaOrigem() != null ? transacao.getContaOrigem().getId():null,
-                transacao.getContaDestino()!= null ? transacao.getContaDestino().getId():null,
-                transacao.getStatus()
-        )).toList();
+
+    public void atualizarStatus(UUID transacaoId, TransacaoStatus status) {
+        Transacao transacao = transacaoRepository.findById(transacaoId).orElseThrow(() ->
+                new ContaNotFoundException("Transação não encontrada"));
+        transacao.setStatus(status);
+        transacaoRepository.save(transacao);
     }
+
+
+
 
 
 }
