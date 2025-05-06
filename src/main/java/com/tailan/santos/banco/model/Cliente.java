@@ -10,23 +10,17 @@ import java.util.UUID;
 @Table(name = "tb_clientes")
 public class Cliente {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
     private String nome;
-    @CPF(message = "Campo CPF precisa ser válido.")
     private String cpf;
-
-    @Email(message = "Campo email tem que ser válido.")
     private String email;
     private String telefone;
     private String endereco;
 
 
-
-
     public Cliente() {
     }
-
 
     public Cliente(String nome, String cpf, String email, String telefone, String endereco) {
         this.nome = nome;
@@ -35,7 +29,6 @@ public class Cliente {
         this.telefone = telefone;
         this.endereco = endereco;
     }
-
 
 
     public UUID getId() {

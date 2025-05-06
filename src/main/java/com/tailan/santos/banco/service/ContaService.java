@@ -3,6 +3,8 @@ package com.tailan.santos.banco.service;
 import com.tailan.santos.banco.dtos.cliente.ClienteResponseDto;
 import com.tailan.santos.banco.dtos.conta.ContaRequestDto;
 import com.tailan.santos.banco.dtos.conta.ContaResponseDto;
+import com.tailan.santos.banco.exception.ClienteNotFound;
+import com.tailan.santos.banco.exception.ContaNotFoundException;
 import com.tailan.santos.banco.model.Cliente;
 import com.tailan.santos.banco.model.Conta;
 import com.tailan.santos.banco.repositories.ClienteRepository;
@@ -26,7 +28,7 @@ public class ContaService {
     public ContaResponseDto cadastraConta(UUID clienteId, ContaRequestDto contaRequestDto) {
         Cliente cliente = clienteService.getCliente(clienteId);
         if (cliente == null) {
-            throw new RuntimeException("Cliente não encontrado");
+            throw new ClienteNotFound("Cliente não encontrado");
         }
 
         Conta conta = new Conta();
@@ -58,7 +60,7 @@ public class ContaService {
     }
 
     public Conta pegarContaPorId(UUID contaId) {
-        Conta conta = contaRepository.findById(contaId).orElseThrow(() -> new RuntimeException("Cliente não encontrado"));
+        Conta conta = contaRepository.findById(contaId).orElseThrow(() -> new ContaNotFoundException("Conta não encontrado"));
         return conta;
     }
 

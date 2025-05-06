@@ -24,7 +24,6 @@ public class ClienteService {
         newCliente.setEndereco(cliente.endereco());
         newCliente.setTelefone(cliente.telefone());
 
-
         Cliente clienteSalvo = clienteRepository.save(newCliente);
         ClienteResponseDto response = new ClienteResponseDto(
                 clienteSalvo.getId(),
@@ -35,7 +34,6 @@ public class ClienteService {
         );
         return response;
     }
-
 
 
     public List<ClienteResponseDto> listaClientes() {

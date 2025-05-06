@@ -10,7 +10,7 @@ import java.util.UUID;
 @Table(name = "tb_transacoes")
 public class Transacao {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
     private BigDecimal valor;
     private LocalDateTime dataHora;

@@ -10,11 +10,11 @@ import java.util.UUID;
 @Table(name = "tb_contas")
 public class Conta {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
     private BigDecimal saldo;
 
-    @OneToOne(cascade = CascadeType.ALL)
+    @OneToOne
     @JoinColumn(name = "cliente_id")
     private Cliente cliente;
 
