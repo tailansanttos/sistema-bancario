@@ -1,5 +1,6 @@
 package com.tailan.santos.banco.model;
 
+import com.tailan.santos.banco.model.cliente.Cliente;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;

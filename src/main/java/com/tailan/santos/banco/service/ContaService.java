@@ -1,13 +1,11 @@
 package com.tailan.santos.banco.service;
 
-import com.tailan.santos.banco.dtos.cliente.ClienteResponseDto;
 import com.tailan.santos.banco.dtos.conta.ContaRequestDto;
 import com.tailan.santos.banco.dtos.conta.ContaResponseDto;
 import com.tailan.santos.banco.exception.ClienteNotFound;
 import com.tailan.santos.banco.exception.ContaNotFoundException;
-import com.tailan.santos.banco.model.Cliente;
+import com.tailan.santos.banco.model.cliente.Cliente;
 import com.tailan.santos.banco.model.Conta;
-import com.tailan.santos.banco.repositories.ClienteRepository;
 import com.tailan.santos.banco.repositories.ContaRepository;
 import org.springframework.stereotype.Service;
 
@@ -58,6 +56,8 @@ public class ContaService {
                 conta.getCliente().getEndereco()
         )).toList();
     }
+
+
 
     public Conta pegarContaPorId(UUID contaId) {
         Conta conta = contaRepository.findById(contaId).orElseThrow(() -> new ContaNotFoundException("Conta não encontrado"));

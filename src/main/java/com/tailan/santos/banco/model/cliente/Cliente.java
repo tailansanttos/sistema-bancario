@@ -1,4 +1,5 @@
-package com.tailan.santos.banco.model;
+package com.tailan.santos.banco.model.cliente;
+
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
@@ -13,11 +14,12 @@ public class Cliente {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
     private String nome;
+    @CPF
     private String cpf;
+    @Email
     private String email;
     private String telefone;
     private String endereco;
-
 
     public Cliente() {
     }
@@ -29,7 +31,6 @@ public class Cliente {
         this.telefone = telefone;
         this.endereco = endereco;
     }
-
 
     public UUID getId() {
         return id;

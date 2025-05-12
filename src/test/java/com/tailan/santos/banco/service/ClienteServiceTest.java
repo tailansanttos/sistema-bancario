@@ -1,7 +1,7 @@
 package com.tailan.santos.banco.service;
 
 import com.tailan.santos.banco.dtos.cliente.ClienteRequestDto;
-import com.tailan.santos.banco.model.Cliente;
+import com.tailan.santos.banco.model.cliente.Cliente;
 import com.tailan.santos.banco.repositories.ClienteRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
