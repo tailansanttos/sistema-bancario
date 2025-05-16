@@ -39,13 +39,12 @@ Esta é uma API de um sistema bancário desenvolvido com Spring Boot e Kafka, ut
 ## Pré-requisitos
 - Java 17+ 
 - Maven
-- Banco de dados configurado (ex. MySQL com schema criado)
-- Chave de API para serviços externos (se necessário, ex. Alpha Vantage, Yahoo Finance)
+- Banco de dados configurado (PostgreSQL)
 
 ## Instalação
 1. Clone o repositório:
    ```bash
-   git clone https://github.com/tailansanttos/agregador-de-investimentos.git
+   git clone https://github.com/tailansanttos/sistema-bancario.git
 
   ## Endpoints
 
