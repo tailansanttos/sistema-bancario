@@ -1,9 +1,10 @@
 package com.tailan.santos.banco.controllers;
 
+import com.tailan.santos.banco.dtos.response.ApiResponse;
 import com.tailan.santos.banco.dtos.transacao.DepositoESaqueTransacaoDto;
 import com.tailan.santos.banco.dtos.transacao.TransacaoResponseDto;
 import com.tailan.santos.banco.dtos.transacao.TransferenciaDto;
-import com.tailan.santos.banco.service.TransacaoService;
+import com.tailan.santos.banco.service.transacao.TransacaoServiceImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,36 +13,40 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/transacoes")
+@RequestMapping("/api/transacoes")
 public class TransacaoController {
-    private final TransacaoService transacaoService;
-    public TransacaoController(TransacaoService transacaoService) {
-        this.transacaoService = transacaoService;
+    private final TransacaoServiceImpl transacaoServiceImpl;
+    public TransacaoController(TransacaoServiceImpl transacaoServiceImpl) {
+        this.transacaoServiceImpl = transacaoServiceImpl;
     }
 
-    @PostMapping("/deposito/{contaId}")
-    public ResponseEntity<TransacaoResponseDto> depositoConta(@PathVariable("contaId")UUID contaId, @RequestBody DepositoESaqueTransacaoDto deposito){
-        TransacaoResponseDto transacao = transacaoService.depositoConta(contaId, deposito);
-        return new ResponseEntity<>(transacao, HttpStatus.CREATED  );
+    @PostMapping("/transacao/deposito")
+    public ResponseEntity<ApiResponse> realizarDeposito(@RequestParam ("contaId") UUID contaId, @RequestBody DepositoESaqueTransacaoDto depositoRequestDto){
+        TransacaoResponseDto depositoResponse = transacaoServiceImpl.realizarDeposito(contaId, depositoRequestDto);
+        return ResponseEntity.ok(new ApiResponse("Deposito realizado com sucesso", depositoResponse));
     }
 
-    @PostMapping("/saque/{contaId}")
-    public ResponseEntity<TransacaoResponseDto> saqueConta(@PathVariable("contaId")UUID contaId, @RequestBody DepositoESaqueTransacaoDto saque){
-        TransacaoResponseDto transacao = transacaoService.saqueConta(contaId, saque);
-        return new ResponseEntity<>(transacao, HttpStatus.CREATED  );
+    @PostMapping("/transacao/saque")
+    public ResponseEntity<ApiResponse> realizarSaque(@RequestParam ("contaId") UUID contaId, @RequestBody DepositoESaqueTransacaoDto saqueRequestDto){
+        TransacaoResponseDto saqueResponse = transacaoServiceImpl.realizarSaque(contaId, saqueRequestDto);
+        return ResponseEntity.ok(new ApiResponse("Saque realizado com sucesso", saqueResponse));
     }
 
-    @PostMapping("/transferencia")
-    public ResponseEntity<TransacaoResponseDto> transferenciaConta(@RequestBody TransferenciaDto transferenciaDto){
-        TransacaoResponseDto transferencia = transacaoService.transferenciaContas(transferenciaDto);
-        return new ResponseEntity<>(transferencia, HttpStatus.CREATED  );
+    @PostMapping("/transacao/deposito")
+    public ResponseEntity<ApiResponse> realizarTransferencia(@RequestBody TransferenciaDto transacaoRequest){
+        TransacaoResponseDto transferenciaResponse = transacaoServiceImpl.realizarTransferencia(transacaoRequest) ;
+        return ResponseEntity.ok(new ApiResponse("Transferencia realizada com sucesso", transferenciaResponse));
     }
 
-    @GetMapping("/extrato/{contaId}")
-    public ResponseEntity<List<TransacaoResponseDto>> extratoConta(@PathVariable("contaId")UUID contaId){
-        List<TransacaoResponseDto> transacoes = transacaoService.extratoConta(contaId);
-        return new ResponseEntity<>(transacoes, HttpStatus.CREATED  );
+    @PostMapping("/transacao/{contaId}/extrato")
+    public ResponseEntity<ApiResponse> pegarExtratoConta(@PathVariable("contaId") UUID contaId){
+        List<TransacaoResponseDto> listExtrato = transacaoServiceImpl.extratoConta(contaId);
+        return ResponseEntity.ok(new ApiResponse("Extrato da sua conta:",  listExtrato) );
     }
+
+
+
+
 
 }
 

@@ -1,4 +1,4 @@
-package com.tailan.santos.banco.model;
+package com.tailan.santos.banco.enums;
 
 public enum TransacaoStatus {
     PENDENTE,
