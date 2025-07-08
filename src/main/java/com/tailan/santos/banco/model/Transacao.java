@@ -1,5 +1,7 @@
 package com.tailan.santos.banco.model;
 
+import com.tailan.santos.banco.enums.TransacaoStatus;
+import com.tailan.santos.banco.enums.TransacaoTipo;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
