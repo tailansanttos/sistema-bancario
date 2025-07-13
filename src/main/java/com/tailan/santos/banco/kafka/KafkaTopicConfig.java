@@ -25,7 +25,7 @@ public class KafkaTopicConfig {
 
     @Bean
     public NewTopic topic1() {
-        return TopicBuilder.name("transferencias")
+        return TopicBuilder.name("transferencias-v2")
                 .partitions(1)
                 .replicas(1)
                 .build();
