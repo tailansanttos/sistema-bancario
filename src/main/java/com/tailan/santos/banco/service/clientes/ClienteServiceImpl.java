@@ -16,7 +16,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
-public abstract class ClienteServiceImpl implements ClienteService {
+public class ClienteServiceImpl implements ClienteService {
+
     private final ClienteRepository clienteRepository;
     public ClienteServiceImpl(ClienteRepository clienteRepository)
     {

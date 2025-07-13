@@ -5,6 +5,8 @@ import com.tailan.santos.banco.dtos.transacao.TransacaoResponseDto;
 import com.tailan.santos.banco.dtos.transacao.TransferenciaDto;
 import com.tailan.santos.banco.exception.ContaNotFoundException;
 import com.tailan.santos.banco.exception.SaldoInsuficienteException;
+import com.tailan.santos.banco.exception.TransacaoNotFoundException;
+import com.tailan.santos.banco.kafka.TransacaoKafkaProducer;
 import com.tailan.santos.banco.model.Conta;
 import com.tailan.santos.banco.model.Transacao;
 import com.tailan.santos.banco.enums.TransacaoStatus;
@@ -28,13 +30,14 @@ import java.util.stream.Collectors;
 public class TransacaoServiceImpl implements TransacaoService {
     private final TransacaoRepository transacaoRepository;
     private final ContaService contaService;
-    private final KafkaTemplate<String, TransacaoResponseDto> kafkaTemplate;
+    private final TransacaoKafkaProducer kafkaProducer;
     private static final Logger logger = LoggerFactory.getLogger(TransacaoServiceImpl.class);
 
-    public TransacaoServiceImpl(TransacaoRepository transacaoRepository, ContaService contaService, KafkaTemplate<String, TransacaoResponseDto> kafkaTemplate) {
+    public TransacaoServiceImpl(TransacaoRepository transacaoRepository, ContaService contaService, TransacaoKafkaProducer kafkaProducer) {
         this.transacaoRepository = transacaoRepository;
         this.contaService = contaService;
-        this.kafkaTemplate = kafkaTemplate;
+        this.kafkaProducer = kafkaProducer;
+
     }
 
     @Transactional
@@ -117,7 +120,10 @@ public class TransacaoServiceImpl implements TransacaoService {
         transacao.setDataHora(LocalDateTime.now());
         transacao.setContaDestino(contaRecebe);
 
+
         Transacao transacaoSalva =  transacaoRepository.save(transacao);
+
+        kafkaProducer.sendTransferencia(entityToDto(transacaoSalva));
         return entityToDto(transacaoSalva);
     }
 
@@ -130,16 +136,17 @@ public class TransacaoServiceImpl implements TransacaoService {
 
     @Override
     public TransacaoResponseDto entityToDto(Transacao transacao) {
-        return new TransacaoResponseDto(
+
+        TransacaoResponseDto transacaoResponseDto = new TransacaoResponseDto(
                 transacao.getId(),
                 transacao.getValor(),
                 transacao.getDataHora(),
                 transacao.getTipo(),
-                transacao.getContaOrigem().getId() !=null ? transacao.getContaOrigem().getId() : null,
-                transacao.getContaDestino().getId() !=null ? transacao.getContaDestino().getId() : null,
+                transacao.getContaOrigem()!= null ? transacao.getContaOrigem().getId() : null,
+                transacao.getContaDestino()!= null ? transacao.getContaDestino().getId() : null,
                 transacao.getStatus()
         );
-
+        return transacaoResponseDto;
 
     }
 
@@ -185,7 +192,7 @@ public class TransacaoServiceImpl implements TransacaoService {
     @Override
     @Transactional
     public void atualizarStatusTransacao(UUID transacaoId, TransacaoStatus status) {
-        Transacao transacao = transacaoRepository.findById(transacaoId).orElseThrow(() -> new ContaNotFoundException("Transação não encontrada."));
+        Transacao transacao = transacaoRepository.findById(transacaoId).orElseThrow(() -> new TransacaoNotFoundException("Transação não encontrada."));
         transacao.setStatus(status);
         this.transacaoRepository.save(transacao);
 

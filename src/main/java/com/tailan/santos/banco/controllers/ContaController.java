@@ -2,42 +2,34 @@ package com.tailan.santos.banco.controllers;
 
 import com.tailan.santos.banco.dtos.conta.ContaRequestDto;
 import com.tailan.santos.banco.dtos.conta.ContaResponseDto;
+
 import com.tailan.santos.banco.dtos.response.ApiResponse;
-import com.tailan.santos.banco.model.Conta;
-import com.tailan.santos.banco.service.conta.ContaServiceImpl;
+import com.tailan.santos.banco.service.conta.ContaService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
 
-
 @RestController
 @RequestMapping("/api/contas")
 public class ContaController {
-    private final ContaServiceImpl contaServiceImpl;
-    public ContaController(ContaServiceImpl contaServiceImpl) {
-        this.contaServiceImpl = contaServiceImpl;
+    private final ContaService contaService;
+    public ContaController(ContaService contaService) {
+        this.contaService = contaService;
     }
 
-    @PostMapping("/conta/add")
-    public ResponseEntity<ApiResponse> cadastrarConta(@RequestParam UUID clienteId, @RequestBody ContaRequestDto contaRequest) {
-        ContaResponseDto conta = contaServiceImpl.cadastraConta(clienteId, contaRequest);
-        return ResponseEntity.ok(new ApiResponse("Conta adicionado com sucesso!", conta));
+    @PostMapping("/conta/{clienteId}")
+    public ResponseEntity<ApiResponse> cadastrarContaDoCliente(@PathVariable("clienteId")UUID clienteId, @RequestBody ContaRequestDto contaRequestDto) {
+        ContaResponseDto contaResponseDto = contaService.cadastraConta(clienteId, contaRequestDto);
+        return ResponseEntity.ok(new ApiResponse("Conta cadastrada com sucesso", contaResponseDto));
     }
 
-    @GetMapping("/all")
+    @GetMapping
     public ResponseEntity<ApiResponse> listarContasCadastradas() {
-        List<ContaResponseDto> listContas = contaServiceImpl.listaContasCadastradas();
-        return ResponseEntity.ok(new ApiResponse("Contas cadastradas!", listContas));
+        List<ContaResponseDto> lista = contaService.listaContasCadastradas();
+        return ResponseEntity.ok(new ApiResponse("Contas cadastradas: ", lista));
     }
-
-    @GetMapping("/conta{contaId}")
-    public ResponseEntity<ApiResponse> listarContaPorId(@PathVariable UUID contaId) {
-        ContaResponseDto conta = contaServiceImpl.pegarContaPorId(contaId);
-        return ResponseEntity.ok(new ApiResponse("Conta encontrada. ", conta));
-    }
-
-
 
 }
